@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{title}}</title> {{!-- Título dinámico desde el router --}}
+    <style>
+      /* Estilos mejorados para la vista de detalles */
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f8f9fa;
+        color: #343a40;
+        line-height: 1.6;
+      }
+      .container {
+        max-width: 700px; /* Un poco más de espacio */
+        margin: 20px auto;
+        background-color: #ffffff;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 30px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+      }
+      h1 {
+        margin-top: 0;
+        margin-bottom: 20px;
+        color: #0056b3; /* Azul oscuro */
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 10px;
+      }
+       .product-image {
+           text-align: center; /* Centrar imagen */
+           margin-bottom: 25px;
+       }
+       .product-image img {
+           max-width: 100%;
+           max-height: 400px; /* Limitar altura máxima */
+           height: auto;
+           border-radius: 5px;
+           border: 1px solid #e9ecef;
+       }
+       .product-info p {
+           margin-bottom: 12px; /* Espaciado entre párrafos */
+       }
+      .product-info strong {
+          color: #495057; /* Gris oscuro para etiquetas */
+      }
+      .price {
+          font-size: 1.4em; /* Precio más grande */
+          font-weight: bold;
+          color: #28a745; /* Verde */
+          margin-bottom: 20px;
+      }
+      .actions {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #e9ecef;
+        display: flex; /* Alinear botones */
+        gap: 10px; /* Espacio entre botones */
+      }
+      .actions a,
+      .actions button {
+        display: inline-block;
+        padding: 12px 18px;
+        border: none;
+        border-radius: 5px;
+        text-decoration: none;
+        cursor: pointer;
+        font-size: 1em;
+        text-align: center;
+        transition: background-color 0.2s ease; /* Transición suave */
+      }
+      .btn-add-cart {
+          background-color: #28a745;
+          color: white;
+      }
+      .btn-add-cart:hover {
+          background-color: #218838;
+      }
+      .btn-back {
+          background-color: #6c757d; /* Gris */
+          color: white;
+      }
+      .btn-back:hover {
+           background-color: #5a6268;
+       }
+       /* Feedback */
+       #feedback {
+           margin-top: 20px;
+           padding: 12px;
+           border-radius: 5px;
+           display: none;
+           text-align: center;
+       }
+       #feedback.success {
+           background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc;
+       }
+       #feedback.error {
+           background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7;
+       }
+    </style>
+</head>
+<body>
+    <div class="container">
+      {{!-- Sección de Imagen --}}
+      <div class="product-image">
+          {{#if product.thumbnails.length}}
+              <img src="{{product.thumbnails.[0]}}" alt="{{product.title}}">
+          {{else}}
+              <p>(No hay imagen disponible)</p>
+          {{/if}}
+      </div>
+
+      {{!-- Información del Producto --}}
+      <div class="product-info">
+          <h1>{{product.title}}</h1>
+          <p class="price">Precio: ${{product.price}}</p>
+          <p><strong>Descripción:</strong> {{product.description}}</p>
+          <p><strong>Categoría:</strong> {{product.category}}</p>
+          <p><strong>Stock Disponible:</strong> {{product.stock}}</p>
+          <p><strong>Código:</strong> {{product.code}}</p>
+          {{!-- Añadir más detalles si es necesario --}}
+      </div>
+
+      {{!-- Acciones --}}
+      <div class="actions">
+        <button class="btn-add-cart" onclick="agregarAlCarrito('{{product._id}}')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-cart-plus-fill" viewBox="0 0 16 16" style="vertical-align: -0.125em; margin-right: 5px;">
+                <path d="M.5 1a.5.5 0 0 0 0 1h1.11l.401 1.607 1.498 7.985A.5.5 0 0 0 4 12h1a2 2 0 1 0 0 4 2 2 0 0 0 0-4h7a2 2 0 1 0 0 4 2 2 0 0 0 0-4h1a.5.5 0 0 0 .491-.408l1.5-8A.5.5 0 0 0 14.5 3H2.89l-.405-1.621A.5.5 0 0 0 2 1zM6 14a1 1 0 1 1-2 0 1 1 0 0 1 2 0m7 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0M9 5.5V7h1.5a.5.5 0 0 1 0 1H9v1.5a.5.5 0 0 1-1 0V8H6.5a.5.5 0 0 1 0-1H8V5.5a.5.5 0 0 1 1 0"/>
+            </svg>
+            Agregar al Carrito
+        </button>
+        <a href="/products" class="btn-back">Volver a Productos</a>
+      </div>
+
+      {{!-- Feedback para el usuario --}}
+      <div id="feedback"></div>
+    </div>
+
+    <script>
+      // --- Lógica de Carrito (LocalStorage) ---
+
+      // Variable para el ID del carrito, inicializada desde localStorage
+      let currentCartId = localStorage.getItem('cartId');
+
+      /** Muestra un mensaje temporal al usuario */
+      function showFeedback(message, type = 'info') {
+          const feedbackDiv = document.getElementById('feedback');
+          if (!feedbackDiv) return; // Salir si no existe el div
+          feedbackDiv.textContent = message;
+          feedbackDiv.className = type; // success o error
+          feedbackDiv.style.display = 'block';
+          setTimeout(() => { feedbackDiv.style.display = 'none'; }, 4000); // Ocultar tras 4s
+      }
+
+      /** Obtiene el ID del carrito existente o crea uno nuevo */
+      async function getOrCreateCart() {
+          if (currentCartId) {
+              // Verifica si el carrito aún existe en el backend
+              try {
+                  const response = await fetch(`/api/carts/${currentCartId}`);
+                  if (response.ok) {
+                      console.log(`Usando carrito existente: ${currentCartId}`);
+                      return currentCartId;
+                  } else if (response.status === 404) {
+                      console.warn(`Carrito ${currentCartId} no encontrado. Creando nuevo.`);
+                      localStorage.removeItem('cartId');
+                      currentCartId = null;
+                  } else {
+                      throw new Error(`Error ${response.status} verificando carrito`);
+                  }
+              } catch (error) {
+                  console.error("Error verificando carrito:", error);
+                  currentCartId = null; // Intentar crear uno nuevo
+              }
+          }
+
+          // Crear un nuevo carrito si no hay uno válido
+          try {
+              console.log("Creando nuevo carrito...");
+              const response = await fetch('/api/carts', { method: 'POST' });
+              if (!response.ok) throw new Error(`Error ${response.status} creando carrito`);
+              const cartData = await response.json();
+
+              if (cartData.status === 'success' && cartData.payload?._id) {
+                  currentCartId = cartData.payload._id;
+                  localStorage.setItem('cartId', currentCartId);
+                  console.log(`Nuevo carrito creado y guardado: ${currentCartId}`);
+                  return currentCartId;
+              } else {
+                  throw new Error("Respuesta inválida al crear carrito");
+              }
+          } catch (error) {
+              console.error("Error crítico al crear carrito:", error);
+              showFeedback(`Error al gestionar el carrito: ${error.message}`, 'error');
+              return null; // No se pudo obtener/crear
+          }
+      }
+
+      /** Función principal llamada por el botón */
+      async function agregarAlCarrito(productId) {
+          showFeedback("Procesando...", "info"); // Feedback inicial
+          const cartId = await getOrCreateCart();
+
+          if (!cartId) return; // Salir si no hay carrito
+
+          console.log(`Agregando producto ${productId} al carrito ${cartId}`);
+          try {
+              // Hacer la petición POST para agregar el producto
+              const response = await fetch(`/api/carts/${cartId}/product/${productId}`, { method: 'POST' });
+
+              // Analizar la respuesta del backend
+              if (!response.ok) {
+                  let errorMsg = `Error ${response.status}`;
+                  try { // Intentar obtener mensaje de error del cuerpo JSON
+                      const errorBody = await response.json();
+                      errorMsg = errorBody.error || errorMsg;
+                  } catch (e) { /* Ignorar si el cuerpo no es JSON */ }
+                  throw new Error(errorMsg);
+              }
+
+              const result = await response.json(); // Obtener respuesta de éxito
+              console.log('Producto agregado:', result);
+              showFeedback('¡Producto agregado al carrito!', 'success');
+
+              // Aquí podrías actualizar otros elementos de la UI si fuera necesario
+              // ej: un contador de ítems en el header
+
+          } catch (err) {
+              console.error('Error al agregar producto:', err);
+              showFeedback(`Error: ${err.message}`, 'error');
+          }
+      }
+      // --- Fin Lógica de Carrito ---
+    </script>
+</body>
+</html>

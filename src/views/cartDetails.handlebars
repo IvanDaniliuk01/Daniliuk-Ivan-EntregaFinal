@@ -1,0 +1,279 @@
+{{!-- /views/cartDetails.handlebars --}}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{title}}</title>
+    <style>
+      /* Estilos para la vista del carrito */
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        margin: 0; padding: 20px; background-color: #f8f9fa; color: #343a40; line-height: 1.6;
+      }
+      .container {
+        max-width: 800px; margin: 20px auto; background-color: #ffffff; border: 1px solid #dee2e6;
+        border-radius: 8px; padding: 30px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+      }
+      h1 {
+        margin-top: 0; margin-bottom: 25px; color: #0056b3; border-bottom: 2px solid #e9ecef; padding-bottom: 10px;
+      }
+      .cart-item {
+        display: flex; align-items: center; border-bottom: 1px solid #e9ecef; padding: 20px 0; gap: 20px;
+      }
+      .cart-item:last-child { border-bottom: none; }
+      .cart-item-image img {
+          width: 80px; height: 80px; object-fit: cover; border-radius: 4px; border: 1px solid #e9ecef;
+      }
+      .cart-item-info { flex-grow: 1; }
+      .cart-item-info h2 { margin: 0 0 8px 0; font-size: 1.2em; color: #495057; }
+      .cart-item-info p { margin: 4px 0; font-size: 0.95em; }
+      .cart-item-actions button {
+        padding: 8px 12px; border: none; border-radius: 4px; background-color: #dc3545;
+        color: white; cursor: pointer; font-size: 0.9em; transition: background-color 0.2s ease;
+      }
+      .cart-item-actions button:hover { background-color: #c82333; }
+       .cart-summary {
+           margin-top: 30px; padding-top: 20px; border-top: 2px solid #dee2e6; text-align: right;
+       }
+       .cart-summary p { font-size: 1.3em; font-weight: bold; margin-bottom: 20px; }
+       .cart-actions { display: flex; justify-content: space-between; align-items: center; }
+       .cart-actions a, .cart-actions button {
+            padding: 12px 18px; border-radius: 5px; text-decoration: none; font-size: 1em;
+            cursor: pointer; transition: background-color 0.2s ease; border: none;
+        }
+        .btn-continue-shopping { background-color: #6c757d; color: white; }
+        .btn-continue-shopping:hover { background-color: #5a6268; }
+        .btn-finalize-cart { background-color: #28a745; color: white; }
+        .btn-finalize-cart:hover { background-color: #218838; }
+        .btn-finalize-cart:disabled { background-color: #adb5bd; cursor: not-allowed; }
+        .finalized-message { color: #198754; font-weight: bold; font-size: 1.1em; }
+      .empty-cart { text-align: center; padding: 40px; color: #6c757d; }
+       #feedback {
+           margin-top: 20px; padding: 12px; border-radius: 5px; display: none; text-align: center;
+       }
+       #feedback.success { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
+       #feedback.error { background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{{title}}</h1>
+
+        {{!-- Verifica si hay productos en el carrito --}}
+        {{#if cart.products.length}}
+            <div id="cartItems">
+                {{#each cart.products}}
+                    {{!-- Solo muestra el item si el producto pudo ser poblado --}}
+                    {{#if this.product}}
+                        <div class="cart-item" id="item-{{this.product._id}}"> {{!-- Añadir ID al div del item --}}
+                            <div class="cart-item-image">
+                                {{#if this.product.thumbnails.length}}
+                                    <img src="{{this.product.thumbnails.[0]}}" alt="{{this.product.title}}">
+                                {{else}}
+                                    <img src="/img/placeholder.png" alt="Producto sin imagen"> {{!-- Asume /public/img/placeholder.png --}}
+                                {{/if}}
+                            </div>
+                            <div class="cart-item-info">
+                                <h2>{{this.product.title}}</h2>
+                                <p><strong>Cantidad:</strong> <span id="qty-{{this.product._id}}">{{this.quantity}}</span></p>
+                                <p><strong>Precio Unitario:</strong> ${{this.product.price}}</p>
+                                {{!-- El subtotal se puede calcular en JS o con helper --}}
+                                <p><strong>Subtotal:</strong> $<span id="subtotal-{{this.product._id}}">{{calculateSubtotal this.product.price this.quantity}}</span></p>
+                            </div>
+                            <div class="cart-item-actions">
+                                {{!-- No permitir eliminar si el carrito está finalizado --}}
+                                {{#unless ../cart.finalized}}
+                                <button onclick="eliminarProducto('{{../cartId}}', '{{this.product._id}}')" title="Eliminar Producto">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill" viewBox="0 0 16 16" style="vertical-align: -0.125em;"><path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"/></svg>
+                                </button>
+                                {{/unless}}
+                            </div>
+                        </div>
+                    {{!-- Manejo opcional si el producto no existe más --}}
+                    {{!-- else
+                        <div class="cart-item" style="opacity: 0.6; font-style: italic;">
+                            <p>Un producto ya no está disponible.</p>
+                        </div>
+                    --}}
+                    {{/if}}
+                {{/each}}
+            </div>
+
+            {{!-- Resumen y Acciones Globales --}}
+            <div class="cart-summary">
+                <p>Total del Carrito: $<span id="cart-total">{{totalAmount}}</span></p>
+            </div>
+            <div class="cart-actions">
+                 <a href="/products" class="btn-continue-shopping">Seguir Comprando</a>
+                 {{#unless cart.finalized}}
+                    <button id="btn-finalize" class="btn-finalize-cart" onclick="finalizarCompra('{{cartId}}')">Finalizar Compra</button>
+                 {{else}}
+                     <p class="finalized-message">¡Compra Finalizada!</p>
+                 {{/unless}}
+            </div>
+
+        {{else}}
+            {{!-- Carrito Vacío --}}
+            <div class="empty-cart">
+                <h2>Tu carrito está vacío</h2>
+                <p>Añade productos para verlos aquí.</p>
+                <a href="/products" class="btn-continue-shopping">Explorar Productos</a>
+            </div>
+        {{/if}}
+
+         {{!-- Feedback --}}
+         <div id="feedback"></div>
+    </div>
+
+    <script>
+      /** Muestra un mensaje temporal al usuario */
+      function showFeedback(message, type = 'info') {
+          const feedbackDiv = document.getElementById('feedback');
+          if (!feedbackDiv) return;
+          feedbackDiv.textContent = message;
+          feedbackDiv.className = type;
+          feedbackDiv.style.display = 'block';
+          // Ajustar tiempo si es necesario
+          const duration = type === 'error' ? 5000 : 3000;
+          setTimeout(() => { feedbackDiv.style.display = 'none'; }, duration);
+      }
+
+       /** Calcula subtotal (alternativa a helper Handlebars) */
+       function calculateSubtotal(price, quantity) {
+           const numPrice = parseFloat(price);
+           const numQty = parseInt(quantity, 10);
+           if (!isNaN(numPrice) && !isNaN(numQty)) {
+               return (numPrice * numQty).toFixed(2);
+           }
+           return '0.00';
+       }
+
+       /** Actualiza dinámicamente el total del carrito en la UI */
+       function updateCartTotalUI(cartData) {
+           const totalSpan = document.getElementById('cart-total');
+           let newTotal = 0;
+           if (cartData && cartData.products && cartData.products.length > 0) {
+                newTotal = cartData.products.reduce((sum, item) => {
+                   if (item.product && typeof item.product.price === 'number' && typeof item.quantity === 'number') {
+                       return sum + (item.product.price * item.quantity);
+                   }
+                   return sum;
+                }, 0);
+           }
+           if (totalSpan) {
+               totalSpan.textContent = newTotal.toFixed(2);
+           }
+           // Actualizar también el estado de "carrito vacío" si aplica
+           const cartItemsDiv = document.getElementById('cartItems');
+           const emptyCartDiv = document.querySelector('.empty-cart'); // Podría necesitar un ID si hay varios
+           if (newTotal === 0 && cartItemsDiv && emptyCartDiv) {
+               cartItemsDiv.style.display = 'none';
+                document.querySelector('.cart-summary').style.display = 'none'; // Ocultar resumen
+                document.querySelector('.cart-actions').style.display = 'none'; // Ocultar acciones
+                emptyCartDiv.style.display = 'block'; // Mostrar mensaje vacío
+           }
+       }
+
+
+      /** Elimina un producto del carrito */
+      async function eliminarProducto(cartId, productId) {
+          if (!cartId || !productId) {
+              console.error("IDs faltantes para eliminar.");
+              return;
+          }
+
+          showFeedback("Eliminando...", "info");
+          try {
+              const response = await fetch(`/api/carts/${cartId}/products/${productId}`, { method: 'DELETE' });
+              if (!response.ok) {
+                  let errorMsg = `Error ${response.status}`;
+                  try { const err = await response.json(); errorMsg = err.error || errorMsg; } catch (e) {}
+                  throw new Error(errorMsg);
+              }
+
+              const result = await response.json(); // Carrito actualizado
+              console.log('Producto eliminado, carrito actualizado:', result);
+              showFeedback('Producto eliminado.', 'success');
+
+              // --- Actualización Dinámica de UI (sin recargar) ---
+              // 1. Eliminar el elemento del DOM
+              const itemDiv = document.getElementById(`item-${productId}`);
+              if (itemDiv) {
+                  itemDiv.remove();
+              }
+              // 2. Actualizar el total
+              updateCartTotalUI(result.payload); // Asumiendo que la respuesta es { status, payload: cart }
+              // --- Fin Actualización Dinámica ---
+
+              // Alternativa simple: location.reload();
+
+          } catch (err) {
+              console.error('Error al eliminar producto:', err);
+              showFeedback(`Error: ${err.message}`, 'error');
+          }
+      }
+
+       /** Finaliza la compra */
+       async function finalizarCompra(cartId) {
+           if (!cartId) return;
+           if (!confirm(`¿Confirmas que quieres finalizar la compra de este carrito?`)) return;
+
+           showFeedback("Finalizando compra...", "info");
+           const finalizeButton = document.getElementById('btn-finalize');
+           if(finalizeButton) finalizeButton.disabled = true; // Deshabilitar botón
+
+           try {
+                const response = await fetch(`/api/carts/${cartId}/finalize`, { method: 'PUT' });
+                if (!response.ok) {
+                    let errorMsg = `Error ${response.status}`;
+                    try { const err = await response.json(); errorMsg = err.error || errorMsg; } catch (e) {}
+                    throw new Error(errorMsg);
+                 }
+
+                const result = await response.json();
+                console.log('Carrito finalizado:', result);
+                showFeedback('¡Compra finalizada con éxito!', 'success');
+
+                // Reemplazar botón por mensaje de finalizado
+                 const actionsDiv = document.querySelector('.cart-actions');
+                 if (actionsDiv && finalizeButton) {
+                     finalizeButton.remove();
+                     const finalizedMsg = document.createElement('p');
+                     finalizedMsg.className = 'finalized-message';
+                     finalizedMsg.textContent = '¡Compra Finalizada!';
+                     actionsDiv.appendChild(finalizedMsg); // O insertarlo antes del otro botón
+                 }
+                // Opcional: podrías redirigir después de un tiempo
+                // setTimeout(() => { window.location.href = '/ordenes/gracias'; }, 2000);
+
+           } catch (err) {
+                console.error('Error al finalizar compra:', err);
+                showFeedback(`Error al finalizar: ${err.message}`, 'error');
+                if(finalizeButton) finalizeButton.disabled = false; // Rehabilitar si falló
+           }
+       }
+
+        // --- Inicialización para calcular subtotales al cargar (si no usas helper) ---
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.cart-item').forEach(item => {
+                const priceElement = item.querySelector('.cart-item-info p:nth-of-type(3)'); // Asumiendo que es el 3ro
+                const qtyElement = item.querySelector('.cart-item-info p:nth-of-type(2)'); // Asumiendo que es el 2do
+                const subtotalSpan = item.querySelector('[id^="subtotal-"]');
+
+                if (priceElement && qtyElement && subtotalSpan) {
+                    try {
+                        const priceText = priceElement.textContent.split('$')[1];
+                        const qtyText = qtyElement.textContent.split(':')[1];
+                        const subtotal = calculateSubtotal(priceText, qtyText);
+                        subtotalSpan.textContent = subtotal;
+                    } catch (e) {
+                        console.error("Error calculando subtotal inicial para un item:", e);
+                        if(subtotalSpan) subtotalSpan.textContent = 'Error';
+                    }
+                }
+            });
+        });
+
+    </script>
+</body>
+</html>

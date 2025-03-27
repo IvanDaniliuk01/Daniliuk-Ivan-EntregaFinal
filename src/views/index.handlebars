@@ -1,0 +1,281 @@
+{{!-- /views/index.handlebars (con formulario de creación integrado) --}}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{title}}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> {{!-- Viewport --}}
+    <style>
+      /* Estilos combinados para lista, paginación y formulario */
+      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; padding: 20px; background-color: #f8f9fa; color: #343a40; line-height: 1.5; }
+      .container { max-width: 1100px; margin: 20px auto; }
+      h1, h2 { text-align: center; margin-bottom: 20px; color: #0056b3; border-bottom: 2px solid #e9ecef; padding-bottom: 10px; }
+      h1 { margin-bottom: 30px; }
+
+      /* Formulario de Creación */
+       .create-form-section {
+           background-color: #fff; border: 1px solid #dee2e6; border-radius: 8px;
+           padding: 25px; margin-bottom: 40px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+       }
+       .create-form-section h2 { text-align: left; border: none; padding-bottom: 0; margin-bottom: 15px;}
+       .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px 20px; } /* Grid para campos */
+       .form-group label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 0.9em; }
+       .form-group input[type="text"], .form-group input[type="number"], .form-group textarea {
+           width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; box-sizing: border-box; /* Incluir padding en width */
+       }
+       .form-group textarea { resize: vertical; min-height: 60px; }
+       .form-actions { grid-column: 1 / -1; text-align: right; margin-top: 15px; } /* Abarca todas las columnas */
+       .btn-create {
+           padding: 10px 20px; background-color: #198754; color: white; /* Verde más oscuro */
+           border: none; border-radius: 5px; cursor: pointer; font-size: 1em; transition: background-color 0.2s ease;
+        }
+       .btn-create:hover { background-color: #157347; }
+
+      /* Grid de Productos (sin cambios) */
+      .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; margin-bottom: 30px; }
+      .product { background-color: #fff; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+      .product:hover { transform: translateY(-5px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+      .product-image { text-align: center; margin-bottom: 15px; }
+      .product-image img { max-width: 100%; height: 180px; object-fit: contain; border-radius: 4px; }
+      .product h3 { /* Usar h3 para productos si h1 y h2 ya están usados */ margin: 0 0 10px 0; font-size: 1.15em; color: #495057; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+      .product p { margin: 5px 0; font-size: 0.9em; }
+      .product .price { font-weight: bold; color: #28a745; margin: 10px 0; }
+      .product-actions { margin-top: auto; padding-top: 15px; border-top: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+      .product-actions a, .product-actions button { padding: 8px 12px; border-radius: 5px; text-decoration: none; font-size: 0.9em; cursor: pointer; transition: background-color 0.2s ease; }
+      .btn-details { background-color: #007bff; color: white; border: none; }
+      .btn-details:hover { background-color: #0056b3; }
+      .btn-add-cart { background-color: #28a745; color: white; border: none; }
+      .btn-add-cart:hover { background-color: #218838; }
+
+      /* Paginación (sin cambios) */
+      .pagination { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e9ecef; display: flex; justify-content: center; align-items: center; gap: 15px; }
+      .pagination a, .pagination span { padding: 8px 14px; border-radius: 4px; text-decoration: none; }
+      .pagination a { border: 1px solid #dee2e6; background-color: #fff; color: #007bff; }
+      .pagination a:hover { background-color: #e9ecef; }
+      .pagination span { color: #495057; font-weight: bold; }
+
+      /* Feedback (posición fija) */
+       #feedback { position: fixed; bottom: 20px; right: 20px; min-width: 250px; padding: 15px; border-radius: 5px; display: none; box-shadow: 0 4px 8px rgba(0,0,0,0.15); z-index: 1000; text-align: center; }
+       #feedback.success { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
+       #feedback.error { background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; }
+       #feedback.info { background-color: #cff4fc; color: #055160; border: 1px solid #b6effb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{{title}}</h1>
+
+        {{!-- Formulario para Crear Producto --}}
+        <section class="create-form-section">
+            <h2>Crear Nuevo Producto</h2>
+            <form id="createProductForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="title">Título:</label>
+                        <input type="text" id="title" name="title" required>
+                    </div>
+                    <div class="form-group">
+                         <label for="code">Código:</label>
+                         <input type="text" id="code" name="code" required>
+                     </div>
+                     <div class="form-group">
+                        <label for="price">Precio:</label>
+                        <input type="number" id="price" name="price" step="0.01" required min="0">
+                     </div>
+                     <div class="form-group">
+                         <label for="stock">Stock:</label>
+                         <input type="number" id="stock" name="stock" required min="0" step="1">
+                     </div>
+                     <div class="form-group" style="grid-column: 1 / -1;"> {{!-- Descripción abarca todo el ancho --}}
+                         <label for="description">Descripción:</label>
+                         <textarea id="description" name="description" required></textarea>
+                    </div>
+                     <div class="form-group">
+                         <label for="category">Categoría:</label>
+                         <input type="text" id="category" name="category" required>
+                     </div>
+                     <div class="form-group">
+                         <label for="thumbnails">Thumbnails (URLs separadas por coma):</label>
+                         <input type="text" id="thumbnails" name="thumbnails" placeholder="ej: /img/url1.jpg, /img/url2.jpg">
+                     </div>
+                     <div class="form-actions">
+                        <button type="submit" class="btn-create">Crear Producto</button>
+                    </div>
+                </div>
+            </form>
+        </section>
+        <hr style="margin: 40px 0; border: none; border-top: 1px solid #e9ecef;">
+
+        <h2>Lista de Productos Disponibles</h2>
+        {{!-- Grid de Productos Existentes --}}
+        {{#if products.length}}
+            <div class="products-grid" id="products-list-container"> {{!-- Añadir ID --}}
+                {{#each products}}
+                    <div class="product">
+                        <div class="product-image">
+                            {{#if this.thumbnails.length}}
+                                <img src="{{this.thumbnails.[0]}}" alt="{{this.title}}">
+                            {{else}}
+                                <img src="/img/placeholder.png" alt="Placeholder"> {{!-- Asume /public/img/placeholder.png --}}
+                            {{/if}}
+                        </div>
+                        <h3>{{this.title}}</h3> {{!-- Usar h3 si h1/h2 ya están en uso --}}
+                        <p class="price">Precio: ${{this.price}}</p>
+                        <p><small>Stock: {{this.stock}}</small></p>
+                        <div class="product-actions">
+                            <a href="/products/{{this._id}}" class="btn-details">Ver Detalles</a>
+                            <button class="btn-add-cart" onclick="agregarAlCarrito('{{this._id}}')">
+                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-cart-plus" viewBox="0 0 16 16" style="vertical-align: -0.125em; margin-right: 4px;">
+                                     <path d="M9 5.5a.5.5 0 0 0-1 0V7H6.5a.5.5 0 0 0 0 1H8v1.5a.5.5 0 0 0 1 0V8h1.5a.5.5 0 0 0 0-1H9z"/>
+                                     <path d="M.5 1a.5.5 0 0 0 0 1h1.11l.401 1.607 1.498 7.985A.5.5 0 0 0 4 12h1a2 2 0 1 0 0 4 2 2 0 0 0 0-4h7a2 2 0 1 0 0 4 2 2 0 0 0 0-4h1a.5.5 0 0 0 .491-.408l1.5-8A.5.5 0 0 0 14.5 3H2.89l-.405-1.621A.5.5 0 0 0 2 1zm3.915 10L3.102 4h10.796l-1.313 7zM6 14a1 1 0 1 1-2 0 1 1 0 0 1 2 0m7 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/>
+                                 </svg>
+                                 Agregar
+                            </button>
+                        </div>
+                    </div>
+                {{/each}}
+            </div>
+        {{else}}
+             <p id="no-products-message" style="text-align: center;">No hay productos para mostrar.</p> {{!-- Añadir ID --}}
+        {{/if}}
+
+        {{!-- Paginación --}}
+        <div class="pagination">
+             {{#if hasPrevPage}}<a href="{{prevLink}}">« Anterior</a>{{/if}}
+             <span>Página {{page}} de {{totalPages}}</span>
+             {{#if hasNextPage}}<a href="{{nextLink}}">Siguiente »</a>{{/if}}
+        </div>
+
+    </div> {{!-- Fin container --}}
+
+    {{!-- Feedback (posición fija) --}}
+    <div id="feedback"></div>
+
+    <script>
+      // --- Lógica Común ---
+      let currentCartId = localStorage.getItem('cartId');
+
+      /** Muestra feedback */
+      function showFeedback(message, type = 'info') {
+          const feedbackDiv = document.getElementById('feedback');
+          if (!feedbackDiv) return;
+          feedbackDiv.textContent = message;
+          feedbackDiv.className = type;
+          feedbackDiv.style.display = 'block';
+          const duration = type === 'error' ? 5000 : 3000;
+          setTimeout(() => { feedbackDiv.style.display = 'none'; }, duration);
+      }
+
+      // --- Lógica de Carrito (getOrCreateCart, agregarAlCarrito) - Idéntica a antes ---
+      async function getOrCreateCart() { /* ... (código idéntico a productDetails) ... */ }
+      async function agregarAlCarrito(productId) { /* ... (código idéntico a productDetails) ... */ }
+
+       // --- Lógica para Crear Producto ---
+        const createForm = document.getElementById('createProductForm');
+        if (createForm) {
+            createForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                showFeedback("Creando producto...", "info");
+
+                const formData = new FormData(createForm);
+                const productData = {};
+                let conversionError = false;
+                formData.forEach((value, key) => {
+                    if (conversionError) return; // Detener si ya hubo error
+
+                    if (key === 'price') {
+                        productData[key] = parseFloat(value);
+                         if (isNaN(productData[key])) {
+                             showFeedback('Error: El precio debe ser un número.', 'error');
+                             conversionError = true;
+                         }
+                    } else if (key === 'stock') {
+                         productData[key] = parseInt(value, 10); // Usar parseInt para stock
+                         if (isNaN(productData[key])) {
+                              showFeedback('Error: El stock debe ser un número entero.', 'error');
+                              conversionError = true;
+                         }
+                    } else if (key === 'thumbnails') {
+                        productData[key] = value.split(',')
+                                                .map(url => url.trim())
+                                                .filter(url => url !== '');
+                    } else {
+                        productData[key] = value;
+                    }
+                });
+
+                if (conversionError) return; // No continuar si hubo error de conversión
+
+                productData.status = true; // Añadir status por defecto
+
+                console.log("Enviando datos de creación:", productData);
+                try {
+                    const response = await fetch('/api/products', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(productData)
+                    });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.error || `Error ${response.status}`);
+
+                    console.log("Producto creado:", result);
+                    showFeedback('¡Producto creado con éxito!', 'success');
+                    createForm.reset();
+
+                    // --- Actualización Dinámica de la Lista (Simple: Recargar) ---
+                    // La forma más fácil es recargar la página actual para ver el nuevo producto
+                    // (especialmente si afecta la paginación).
+                    showFeedback('Actualizando lista...', 'info');
+                    setTimeout(() => window.location.reload(), 1500); // Recargar tras 1.5s
+                    // --- Fin Actualización Simple ---
+
+                    // Alternativa más compleja:
+                    // - Renderizar el nuevo producto en el cliente (necesitaría la plantilla o HTML)
+                    // - Añadirlo al div 'products-list-container'
+                    // - Actualizar potencialmente la paginación si cambia el número total
+
+                } catch (error) {
+                    console.error("Error al crear producto:", error);
+                    showFeedback(`Error al crear: ${error.message}`, 'error');
+                }
+            });
+        }
+
+        // --- Pegar aquí el código completo de getOrCreateCart y agregarAlCarrito ---
+        // (Para evitar duplicación masiva, asume que se pegan aquí o se incluyen desde un archivo JS externo)
+        async function getOrCreateCart() {
+            if (currentCartId) {
+                try {
+                    const response = await fetch(`/api/carts/${currentCartId}`);
+                    if (response.ok) return currentCartId;
+                    else if (response.status === 404) { localStorage.removeItem('cartId'); currentCartId = null; }
+                    else throw new Error(`Error ${response.status}`);
+                } catch (error) { console.error("Error verificando:", error); currentCartId = null; }
+            }
+            try {
+                const response = await fetch('/api/carts', { method: 'POST' });
+                if (!response.ok) throw new Error(`Error ${response.status}`);
+                const cartData = await response.json();
+                if (cartData.status === 'success' && cartData.payload?._id) {
+                    currentCartId = cartData.payload._id;
+                    localStorage.setItem('cartId', currentCartId);
+                    return currentCartId;
+                } else throw new Error("Respuesta inválida");
+            } catch (error) { showFeedback(`Error carrito: ${error.message}`, 'error'); return null; }
+        }
+        async function agregarAlCarrito(productId) {
+            showFeedback("Añadiendo...", "info");
+            const cartId = await getOrCreateCart();
+            if (!cartId) return;
+            try {
+                const response = await fetch(`/api/carts/${cartId}/product/${productId}`, { method: 'POST' });
+                if (!response.ok) { let eMsg = `E${response.status}`; try { const e = await response.json(); eMsg = e.error||eMsg; } catch(e){} throw new Error(eMsg); }
+                const result = await response.json(); console.log('Agregado:', result); showFeedback('¡Producto agregado!', 'success');
+            } catch (err) { console.error('Error agregar:', err); showFeedback(`Error: ${err.message}`, 'error'); }
+        }
+        // --- Fin del código pegado ---
+
+    </script>
+
+</body>
+</html>
